@@ -1,0 +1,6 @@
+(library
+ (name test)
+ (libraries travelguide core stdio ppx_show.runtime)
+ (preprocess
+  (pps ppx_jane ppx_show ppx_assert))
+ (inline_tests))

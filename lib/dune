@@ -1,0 +1,14 @@
+(library
+ (name travelguide)
+ (libraries
+  core
+  core_unix.command_unix
+  cohttp-async
+  lambdasoup
+  yojson
+  ppx_show.runtime
+  caqti
+  caqti-async
+  caqti-driver-postgresql)
+ (preprocess
+  (pps ppx_jane ppx_sexp_conv ppx_yojson_conv ppx_show)))

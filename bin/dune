@@ -1,0 +1,6 @@
+(executable
+ (public_name travelguide_api)
+ (name main)
+ (libraries travelguide core core_unix.command_unix cohttp-async lambdasoup)
+ (preprocess
+  (pps ppx_let)))
