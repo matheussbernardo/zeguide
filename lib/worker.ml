@@ -70,7 +70,7 @@ let get_restaurant_urls_from_page page_num =
     let urls = Michelin.parse_page body_str in
     Deferred.List.filter urls ~f:is_not_on_database
   else if phys_equal response.status `Not_found then raise (Stop "end page")
-  else failwith "DEU MERDA"
+  else failwith "Status nao esperado"
 
 let rec get_all_urls_not_saved n acc =
   let open Deferred.Let_syntax in
@@ -78,6 +78,21 @@ let rec get_all_urls_not_saved n acc =
   match urls with
   | Ok urls ->
       let incremented_urls = List.append acc urls in
+
+      print_endline "Page Num ";
+      print_int n;
+      print_endline "";
+      print_endline "Urls Acc ";
+      print_int (List.length incremented_urls);
+      print_endline "";
+
       get_all_urls_not_saved (n + 1) incremented_urls
-  | Error (Stop _) -> return acc
-  | Error _ -> failwith "DEU MERDA"
+  | Error (Stop _) ->
+      print_endline "Stop Iter Pages";
+      List.iter acc ~f:print_endline;
+      return acc
+  | Error exn ->
+      print_endline "Exception on Iter Pages";
+      Exn.to_string exn |> print_endline;
+      List.iter acc ~f:print_endline;
+      return acc
