@@ -63,25 +63,23 @@ let get_restaurant_urls page_num =
   let urls = Result.map result ~f:Michelin.parse_page in
   return urls
 
-let rec iter_pages n =
+let rec iter_pages n acc =
   let open Deferred.Let_syntax in
   print_string "Start iter_pages ITER <";
   print_int n;
   print_endline ">\n------------";
   let%bind restaurants_urls = get_restaurant_urls n in
   match restaurants_urls with
-  | Ok [] -> return "End Page"
+  | Ok [] -> return acc
   | Ok urls ->
       List.iter urls ~f:(fun url -> print_endline url);
       let%bind result_list =
         Deferred.List.map ~how:`Parallel urls ~f:get_and_save_restaurant
       in
       if phys_equal (List.count result_list ~f:Result.is_error) 0 then
-        iter_pages (n + 1)
-      else
-        let%bind _ = after (sec 60.0) in
-        iter_pages n
+        iter_pages (n + 1) acc
+      else iter_pages (n + 1) (List.append acc result_list)
   | Error e ->
       Exn.to_string e |> print_endline;
       let%bind _ = after (sec 60.0) in
-      iter_pages n
+      iter_pages n acc
