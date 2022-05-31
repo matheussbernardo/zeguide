@@ -51,6 +51,7 @@ let get_restaurant_urls page_num =
                (sprintf "https://guide.michelin.com/en/restaurants/page/%d"
                   page_num))
         in
+        print_endline (Cohttp.Code.string_of_status response.status);
         if phys_equal response.status `Forbidden then (
           print_endline "> Get URLS Failed with Forbidden";
           failwith "Forbidden")
