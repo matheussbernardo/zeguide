@@ -1,6 +1,8 @@
 open Core
 open Async
 
+exception Stop of string
+
 let fetch_and_insert_restaurant restaurant_uri =
   let%bind restaurant_result =
     try_with (fun () ->
@@ -21,12 +23,22 @@ let fetch_and_insert_restaurant restaurant_uri =
       return (Ok ())
   | Error exn -> return (Error exn)
 
-let get_and_save_restaurant restaurant_uri =
-  let open Deferred.Let_syntax in
+let is_on_database restaurant_uri =
   let%bind result = Postgres.check_restaurant restaurant_uri in
-  let not_on_database = Result.map result ~f:(fun l -> List.is_empty l) in
-  match not_on_database with
-  | Ok true ->
+  match Result.map result ~f:(fun l -> not (List.is_empty l)) with
+  | Ok b -> return b
+  | Error exn ->
+      Caqti_error.show exn |> print_endline;
+      failwith (Caqti_error.show exn)
+
+let is_not_on_database restaurant_uri =
+  let%bind on_database = is_on_database restaurant_uri in
+  return (not on_database)
+
+let get_and_save_restaurant restaurant_uri =
+  let%bind on_database = is_on_database restaurant_uri in
+  match on_database with
+  | false ->
       let fetch' restaurant_uri =
         print_endline "> Fetch Restaurant Started";
         let%bind result = fetch_and_insert_restaurant restaurant_uri in
@@ -37,49 +49,38 @@ let get_and_save_restaurant restaurant_uri =
             return (Error restaurant_uri)
       in
       fetch' restaurant_uri
-  | Ok false -> return (Ok restaurant_uri)
-  | Error exn ->
-      Caqti_error.show exn |> print_endline;
-      failwith (Caqti_error.show exn)
+  | true -> return (Ok restaurant_uri)
 
-let get_restaurant_urls page_num =
-  let open Deferred.Let_syntax in
-  let%bind result =
-    try_with (fun () ->
-        let%bind response, body =
-          Cohttp_async.Client.get
-            (Uri.of_string
-               (sprintf "https://guide.michelin.com/en/restaurants/page/%d"
-                  page_num))
-        in
-        print_endline (Cohttp.Code.string_of_status response.status);
-        if phys_equal response.status `Forbidden then (
-          print_endline "> Get URLS Failed with Forbidden";
-          failwith "Forbidden")
-        else
-          let%bind body_str = Cohttp_async.Body.to_string body in
-          return body_str)
+let rec call_page_url num =
+  let%bind response, body =
+    Cohttp_async.Client.get
+      (Uri.of_string
+         (sprintf "https://guide.michelin.com/en/restaurants/page/%d" num))
   in
-  let urls = Result.map result ~f:Michelin.parse_page in
-  return urls
+  if phys_equal response.status `Forbidden then (
+    print_endline "> Get URLS Failed with Forbidden";
+    let%bind _ = after (sec 100.0) in
+    call_page_url num)
+  else return (response, body)
 
-let rec iter_pages n acc =
+let get_restaurant_urls_from_page page_num =
+  let%bind response, body = call_page_url page_num in
+  if phys_equal response.status `OK then
+    let%bind body_str = Cohttp_async.Body.to_string body in
+    let urls = Michelin.parse_page body_str in
+    Deferred.List.filter urls ~f:is_not_on_database
+  else if phys_equal response.status `Not_found then raise (Stop "end page")
+  else failwith "DEU MERDA"
+
+let rec get_all_urls_not_saved n acc =
   let open Deferred.Let_syntax in
-  print_string "Start iter_pages ITER <";
-  print_int n;
-  print_endline ">\n------------";
-  let%bind restaurants_urls = get_restaurant_urls n in
-  match restaurants_urls with
-  | Ok [] -> return acc
+  let%bind urls = try_with (fun _ -> get_restaurant_urls_from_page n) in
+  match urls with
   | Ok urls ->
-      List.iter urls ~f:(fun url -> print_endline url);
-      let%bind result_list =
-        Deferred.List.map ~how:`Parallel urls ~f:get_and_save_restaurant
-      in
-      if phys_equal (List.count result_list ~f:Result.is_error) 0 then
-        iter_pages (n + 1) acc
-      else iter_pages (n + 1) (List.append acc result_list)
-  | Error e ->
-      Exn.to_string e |> print_endline;
-      let%bind _ = after (sec 60.0) in
-      iter_pages n acc
+      let incremented_urls = List.append acc urls in
+      print_endline "-------";
+      List.iter incremented_urls ~f:print_endline;
+      print_endline "-------";
+      get_all_urls_not_saved (n + 1) incremented_urls
+  | Error (Stop _) -> return acc
+  | Error _ -> failwith "DEU MERDA"

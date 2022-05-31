@@ -8,10 +8,9 @@ module Body = Cohttp_async.Body
 
 let () =
   don't_wait_for
-    ( Postgres.migrate () >>= fun _ ->
-      Worker.iter_pages 1 [] >>= fun str ->
-      let errors = List.filter str ~f:Result.is_error in
-      List.iter errors ~f:(fun r ->
-          Result.iter_error r ~f:(fun e -> print_endline e));
+    ( Worker.get_all_urls_not_saved 1 [] >>= fun urls ->
+      let%bind _restaurants =
+        Deferred.List.map urls ~f:Worker.get_and_save_restaurant
+      in
       exit 0 );
   never_returns (Scheduler.go ())
