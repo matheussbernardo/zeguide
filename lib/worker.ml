@@ -32,7 +32,8 @@ let get_and_save_restaurant restaurant_uri =
         let%bind result = fetch_and_insert_restaurant restaurant_uri in
         match result with
         | Ok _ -> return ()
-        | Error _ ->
+        | Error exn ->
+            Exn.to_string exn |> print_endline;
             let%bind _ = after (sec 60.0) in
             let%bind _ = fetch' restaurant_uri in
             return ()
