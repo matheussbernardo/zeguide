@@ -71,6 +71,7 @@ let rec iter_pages n =
   match restaurants_urls with
   | Ok [] -> return "End Page"
   | Ok urls ->
+      List.iter urls ~f:(fun url -> print_endline url);
       let%bind _ =
         Deferred.List.iter ~how:`Parallel urls ~f:get_and_save_restaurant
       in
