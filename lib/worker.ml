@@ -31,18 +31,16 @@ let get_and_save_restaurant restaurant_uri =
         print_endline "> Fetch Restaurant Started";
         let%bind result = fetch_and_insert_restaurant restaurant_uri in
         match result with
-        | Ok _ -> return ()
+        | Ok _ -> return (Ok restaurant_uri)
         | Error exn ->
             Exn.to_string exn |> print_endline;
-            let%bind _ = after (sec 60.0) in
-            let%bind _ = fetch' restaurant_uri in
-            return ()
+            return (Error restaurant_uri)
       in
       fetch' restaurant_uri
-  | Ok false -> return ()
+  | Ok false -> return (Ok restaurant_uri)
   | Error exn ->
       Caqti_error.show exn |> print_endline;
-      return ()
+      failwith (Caqti_error.show exn)
 
 let get_restaurant_urls page_num =
   let open Deferred.Let_syntax in
@@ -75,10 +73,14 @@ let rec iter_pages n =
   | Ok [] -> return "End Page"
   | Ok urls ->
       List.iter urls ~f:(fun url -> print_endline url);
-      let%bind _ =
-        Deferred.List.iter ~how:`Parallel urls ~f:get_and_save_restaurant
+      let%bind result_list =
+        Deferred.List.map ~how:`Parallel urls ~f:get_and_save_restaurant
       in
-      iter_pages (n + 1)
+      if phys_equal (List.count result_list ~f:Result.is_error) 0 then
+        iter_pages (n + 1)
+      else
+        let%bind _ = after (sec 60.0) in
+        iter_pages n
   | Error e ->
       Exn.to_string e |> print_endline;
       let%bind _ = after (sec 60.0) in
