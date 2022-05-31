@@ -27,7 +27,7 @@ let get_and_save_restaurant restaurant_uri =
   let not_on_database = Result.map result ~f:(fun l -> List.is_empty l) in
   match not_on_database with
   | Ok true ->
-      let rec fetch' restaurant_uri =
+      let fetch' restaurant_uri =
         print_endline "> Fetch Restaurant Started";
         let%bind result = fetch_and_insert_restaurant restaurant_uri in
         match result with
