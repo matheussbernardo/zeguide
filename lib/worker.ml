@@ -39,7 +39,9 @@ let get_and_save_restaurant restaurant_uri =
       in
       fetch' restaurant_uri
   | Ok false -> return ()
-  | Error _ -> return ()
+  | Error exn ->
+      Caqti_error.show exn |> print_endline;
+      return ()
 
 let get_restaurant_urls page_num =
   let open Deferred.Let_syntax in
