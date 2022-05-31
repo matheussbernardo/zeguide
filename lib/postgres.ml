@@ -5,8 +5,7 @@ let db_pass = Sys.getenv "DB_PASSWORD"
 let db_name = Sys.getenv "DB_NAME"
 
 let connection_url =
-  Printf.sprintf "user:%s password:%s host=localhost port=5432 dbname=%s"
-    db_user db_pass db_name
+  Printf.sprintf "postgresql://%s:%s@localhost:5432/%s" db_user db_pass db_name
 
 let pool =
   match
