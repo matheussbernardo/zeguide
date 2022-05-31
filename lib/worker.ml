@@ -78,9 +78,6 @@ let rec get_all_urls_not_saved n acc =
   match urls with
   | Ok urls ->
       let incremented_urls = List.append acc urls in
-      print_endline "-------";
-      List.iter incremented_urls ~f:print_endline;
-      print_endline "-------";
       get_all_urls_not_saved (n + 1) incremented_urls
   | Error (Stop _) -> return acc
   | Error _ -> failwith "DEU MERDA"
