@@ -4,11 +4,25 @@
 
 (name travelguide)
 
+(authors "Matheus Bernardo")
+
+(maintainers "matheussbernardo@gmail.com")
+
+(homepage "https://github.com/zeguide/restaurants_crawler")
+
+(bug_reports "https://github.com/zeguide/restaurants_crawler/issues")
+
 (generate_opam_files true)
 
 (package
  (name travelguide)
+ (synopsis "TELEGRAM BOT")
+ (description "TELEGRAM BOT")
  (depends
+  (ppx_show
+   (>= 0.2.1))
+  (ppx_yojson_conv
+   (>= v0.15.0))
   (caqti
    (>= 1.8.0))
   (caqti-async
