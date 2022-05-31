@@ -1,6 +1,11 @@
 open Michelin
 
-let connection_url = "postgresql://root:root@localhost:5432/test_db"
+let db_user = Sys.getenv "DB_USER"
+let db_pass = Sys.getenv "DB_PASSWORD"
+let db_name = Sys.getenv "DB_NAME"
+
+let connection_url =
+  Printf.sprintf "postgresql://%s:%s@localhost:5432/%s" db_user db_pass db_name
 
 let pool =
   match

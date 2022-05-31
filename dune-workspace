@@ -1,0 +1,8 @@
+(lang dune 3.2)
+
+(env
+ (_
+  (env-vars
+   (DB_USER "root")
+   (DB_PASSWORD "root")
+   (DB_NAME "test_db"))))
