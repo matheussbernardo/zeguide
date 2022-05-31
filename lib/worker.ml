@@ -74,6 +74,7 @@ let rec iter_pages n =
         Deferred.List.iter ~how:`Parallel urls ~f:get_and_save_restaurant
       in
       iter_pages (n + 1)
-  | Error _ ->
+  | Error e ->
+      Exn.to_string e |> print_endline;
       let%bind _ = after (sec 60.0) in
       iter_pages n
