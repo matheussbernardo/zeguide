@@ -11,6 +11,7 @@ let start_server port () =
       match req |> Cohttp.Request.meth with
       | `POST ->
           let resource = Request.resource req in
+          print_endline resource;
           if phys_equal resource expected_resource then (
             Body.to_string body >>= fun body ->
             print_endline body;
