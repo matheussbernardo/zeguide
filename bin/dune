@@ -1,6 +1,6 @@
-(executable
- (public_name travelguide_api)
- (name main)
+(executables
+ (public_names michelin_crawler telegram_bot)
+ (names michelin_crawler bot)
  (libraries travelguide core core_unix.command_unix cohttp-async lambdasoup)
  (preprocess
   (pps ppx_let)))

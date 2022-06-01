@@ -5,4 +5,5 @@
   (env-vars
    (DB_USER "root")
    (DB_PASSWORD "root")
-   (DB_NAME "test_db"))))
+   (DB_NAME "test_db")
+   (BOT_TOKEN "token"))))

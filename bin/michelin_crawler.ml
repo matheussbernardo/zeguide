@@ -12,7 +12,8 @@ let () =
       let%bind restaurants =
         Deferred.List.map urls ~f:Worker.get_and_save_restaurant
       in
-      print_string "Number of saved restaurants> ";
+      print_string "Number of fetched restaurants> ";
       print_int (List.length restaurants);
+      print_endline "";
       exit 0 );
   never_returns (Scheduler.go ())

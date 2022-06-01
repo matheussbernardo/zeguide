@@ -12,9 +12,7 @@ let fetch_and_insert_restaurant restaurant_uri =
                (sprintf "https://guide.michelin.com%s" restaurant_uri))
         in
         let%bind body_str = Cohttp_async.Body.to_string body in
-        print_endline "> Fetch Restaurant HTTP";
         let restaurant = Michelin.parse_restaurant body_str in
-        print_endline "> Fetch Restaurant Parse";
         return restaurant)
   in
   match restaurant_result with
@@ -36,20 +34,20 @@ let is_not_on_database restaurant_uri =
   return (not on_database)
 
 let get_and_save_restaurant restaurant_uri =
-  let%bind on_database = is_on_database restaurant_uri in
-  match on_database with
-  | false ->
-      let fetch' restaurant_uri =
-        print_endline "> Fetch Restaurant Started";
-        let%bind result = fetch_and_insert_restaurant restaurant_uri in
-        match result with
-        | Ok _ -> return (Ok restaurant_uri)
-        | Error exn ->
-            Exn.to_string exn |> print_endline;
-            return (Error restaurant_uri)
-      in
-      fetch' restaurant_uri
-  | true -> return (Ok restaurant_uri)
+  print_endline "> Fetch Restaurant Started ";
+  print_string restaurant_uri;
+  print_endline "";
+
+  let%bind result = fetch_and_insert_restaurant restaurant_uri in
+  match result with
+  | Ok _ ->
+      print_endline "> Saved Restaurant ";
+      print_string restaurant_uri;
+      print_endline "";
+      return (Ok restaurant_uri)
+  | Error exn ->
+      Exn.to_string exn |> print_endline;
+      return (Error restaurant_uri)
 
 let rec call_page_url num =
   let%bind response, body =
