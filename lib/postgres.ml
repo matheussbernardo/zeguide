@@ -58,7 +58,7 @@ let get_restaurants_within_query =
   @@ {|select *
       from   restaurant z
       where  earth_distance(ll_to_earth(z.latitude, z.longitude),
-      ll_to_earth(?, ?)) < ?; -- in meters  |}
+      ll_to_earth(?, ?)) < ?  |}
 
 let get_restaurants_within lat lon within =
   let get_restaurants_within' lat lon within (module C : Caqti_async.CONNECTION)
