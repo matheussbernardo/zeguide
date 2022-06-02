@@ -76,7 +76,6 @@ let rec get_all_urls_not_saved n acc =
   match urls with
   | Ok urls ->
       let incremented_urls = List.append acc urls in
-
       print_endline "Page Num ";
       print_int n;
       print_endline "";
@@ -84,7 +83,11 @@ let rec get_all_urls_not_saved n acc =
       print_int (List.length incremented_urls);
       print_endline "";
 
-      get_all_urls_not_saved (n + 1) incremented_urls
+      if List.equal String.equal incremented_urls acc then (
+        print_endline "Stop Iter Pages";
+        List.iter acc ~f:print_endline;
+        return acc)
+      else get_all_urls_not_saved (n + 1) incremented_urls
   | Error (Stop _) ->
       print_endline "Stop Iter Pages";
       List.iter acc ~f:print_endline;

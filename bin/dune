@@ -1,6 +1,6 @@
 (executables
- (public_names michelin_crawler telegram_bot)
- (names michelin_crawler bot)
+ (public_names michelin_crawler telegram_bot api)
+ (names michelin_crawler bot api)
  (libraries travelguide core core_unix.command_unix cohttp-async lambdasoup)
  (preprocess
   (pps ppx_let)))
