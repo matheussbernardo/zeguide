@@ -17,23 +17,32 @@ let start_server port () =
             print_endline body;
             let json = Yojson.Basic.from_string body in
             let open Yojson.Basic.Util in
-            let latitude =
-              json |> member "message" |> member "location" |> member "latitude"
-              |> to_string
+            let%bind response =
+              try_with (fun _ ->
+                  let latitude =
+                    json |> member "message" |> member "location"
+                    |> member "latitude" |> to_string
+                  in
+                  let longitude =
+                    json |> member "message" |> member "location"
+                    |> member "longitude" |> to_string
+                  in
+                  let%bind response, _body =
+                    Cohttp_async.Client.get
+                      (Uri.add_query_params
+                         (Uri.of_string "localhost:8082/near")
+                         [ ("lat", [ latitude ]); ("lon", [ longitude ]) ])
+                  in
+                  return response)
             in
-            let longitude =
-              json |> member "message" |> member "location"
-              |> member "longitude" |> to_string
-            in
-            let%bind response, _body =
-              Cohttp_async.Client.get
-                (Uri.add_query_params
-                   (Uri.of_string "localhost:8082/near")
-                   [ ("lat", [ latitude ]); ("lon", [ longitude ]) ])
-            in
-            print_int (Cohttp.Code.code_of_status response.status);
-            print_endline "Update received";
-            Server.respond `OK)
+            match response with
+            | Ok r ->
+                print_endline "Update received";
+                print_int (Cohttp.Code.code_of_status r.status);
+                Server.respond `OK
+            | Error _ ->
+                print_endline "Update received but error in processing message";
+                Server.respond `OK)
           else Server.respond `Forbidden
       | _ -> Server.respond `Method_not_allowed)
   >>= fun _ -> Deferred.never ()
