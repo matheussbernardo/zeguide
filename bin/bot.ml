@@ -21,17 +21,20 @@ let start_server port () =
               try_with (fun _ ->
                   let latitude =
                     json |> member "message" |> member "location"
-                    |> member "latitude" |> to_string
+                    |> member "latitude" |> to_float
                   in
                   let longitude =
                     json |> member "message" |> member "location"
-                    |> member "longitude" |> to_string
+                    |> member "longitude" |> to_float
                   in
                   let%bind response, _body =
                     Cohttp_async.Client.get
                       (Uri.add_query_params
                          (Uri.of_string "localhost:8082/near")
-                         [ ("lat", [ latitude ]); ("lon", [ longitude ]) ])
+                         [
+                           ("lat", [ latitude |> Float.to_string ]);
+                           ("lon", [ longitude |> Float.to_string ]);
+                         ])
                   in
                   return response)
             in
