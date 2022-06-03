@@ -43,7 +43,8 @@ let start_server port () =
                 print_endline "Update received";
                 print_int (Cohttp.Code.code_of_status r.status);
                 Server.respond `OK
-            | Error _ ->
+            | Error exn ->
+                Exn.to_string exn |> print_endline;
                 print_endline "Update received but error in processing message";
                 Server.respond `OK)
           else Server.respond `Forbidden
