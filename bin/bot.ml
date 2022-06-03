@@ -17,7 +17,7 @@ let start_server port () =
             print_endline body;
             let json = Yojson.Basic.from_string body in
             let open Yojson.Basic.Util in
-            let%bind response =
+            let%bind body =
               try_with (fun _ ->
                   let latitude =
                     json |> member "message" |> member "location"
@@ -27,7 +27,7 @@ let start_server port () =
                     json |> member "message" |> member "location"
                     |> member "longitude" |> to_float
                   in
-                  let%bind response, _body =
+                  let%bind _, body =
                     Cohttp_async.Client.get
                       (Uri.add_query_params
                          (Uri.of_string "http://localhost:8082/near")
@@ -36,12 +36,29 @@ let start_server port () =
                            ("lon", [ longitude |> Float.to_string ]);
                          ])
                   in
-                  return response)
+                  let%bind body_str = Cohttp_async.Body.to_string body in
+                  return body_str)
             in
-            match response with
-            | Ok r ->
+            match body with
+            | Ok body ->
+                let restaurants =
+                  Yojson.Safe.from_string body
+                  |> Yojson.Safe.Util.convert_each
+                       Travelguide.Api.restaurant_of_yojson
+                in
+                List.iter restaurants ~f:(fun r ->
+                  let%bind _, body =
+                    Cohttp_async.Client.get
+                      (Uri.add_query_params
+                         (Uri.of_string "http://localhost:8082/near")
+                         [
+                           ("lat", [ latitude |> Float.to_string ]);
+                           ("lon", [ longitude |> Float.to_string ]);
+                         ])
+                  in
+                  let%bind body_str = Cohttp_async.Body.to_string body in
+                  );
                 print_endline "Update received";
-                print_int (Cohttp.Code.code_of_status r.status);
                 Server.respond `OK
             | Error exn ->
                 Exn.to_string exn |> print_endline;
