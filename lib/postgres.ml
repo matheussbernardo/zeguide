@@ -54,15 +54,28 @@ let check_restaurant restaurant_uri =
 let get_restaurants_within_query =
   let open Caqti_request.Infix in
   let open Caqti_type in
-  (tup3 float float float ->* tup2 string string)
-  @@ {|select *
-      from   restaurant z
-      where  earth_distance(ll_to_earth(z.latitude, z.longitude),
-      ll_to_earth(?, ?)) < ?  |}
+  (tup3 float float float ->* tup3 string string float)
+  @@ {| 
+      with restaurant_with_distance as (
+        select id, content,
+                earth_distance(ll_to_earth((z.content->>'latitude')::float, 
+                    (z.content->>'longitude')::float), 
+                    ll_to_earth(?, ?)) as distance
+                    from restaurant z
+                                    )
+    
+        select id, content, distance
+        from restaurant_with_distance
+        where distance < ?
+        order by distance
+      |}
 
 let get_restaurants_within lat lon within =
   let get_restaurants_within' lat lon within (module C : Caqti_async.CONNECTION)
       =
     C.collect_list get_restaurants_within_query (lat, lon, within)
   in
-  Caqti_async.Pool.use (get_restaurants_within' lat lon within) pool
+  let restaurants =
+    Caqti_async.Pool.use (get_restaurants_within' lat lon within) pool
+  in
+  Async.Deferred.Result.map_error restaurants ~f:Caqti_error.show

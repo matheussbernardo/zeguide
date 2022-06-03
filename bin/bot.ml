@@ -15,18 +15,26 @@ let start_server port () =
           if String.equal resource_path expected_resource then (
             Body.to_string body >>= fun body ->
             print_endline body;
+            let json = Yojson.Basic.from_string body in
+            let open Yojson.Basic.Util in
+            let latitude =
+              json |> member "message" |> member "location" |> member "latitude"
+              |> to_string
+            in
+            let longitude =
+              json |> member "message" |> member "location"
+              |> member "longitude" |> to_string
+            in
+            let%bind response, _body =
+              Cohttp_async.Client.get
+                (Uri.add_query_params
+                   (Uri.of_string "localhost:8082/near")
+                   [ ("lat", [ latitude ]); ("lon", [ longitude ]) ])
+            in
+            print_int (Cohttp.Code.code_of_status response.status);
             print_endline "Update received";
             Server.respond `OK)
           else Server.respond `Forbidden
-      | `GET ->
-          if String.equal resource_path "/near" then
-            let latitude = Uri.get_query_param uri "lat" in
-            let longitutde = Uri.get_query_param uri "lon" in
-            if Option.is_some latitude && Option.is_some longitutde then (
-              print_endline "Update received";
-              Server.respond `OK)
-            else Server.respond `Bad_request
-          else Server.respond `Not_found
       | _ -> Server.respond `Method_not_allowed)
   >>= fun _ -> Deferred.never ()
 
