@@ -30,7 +30,7 @@ let start_server port () =
                   let%bind response, _body =
                     Cohttp_async.Client.get
                       (Uri.add_query_params
-                         (Uri.of_string "localhost:8082/near")
+                         (Uri.of_string "http://localhost:8082/near")
                          [
                            ("lat", [ latitude |> Float.to_string ]);
                            ("lon", [ longitude |> Float.to_string ]);
